@@ -24,26 +24,28 @@ module apb_event_unit
 
     // registers
 
-    logic [31:0] [0:`REGS_MAX_IDX] regs_q, regs_n;
+    logic [0:`REGS_MAX_IDX] [31:0]  regs_q, regs_n;
     
 
-    // APB regis Interface
+    // APB register interface
     
     logic [APB_ADDR_WIDTH-1:0]      apb_paddr;
     logic [31:0]                    apb_pwdata;
-    logic                           apb_pwrite;
-    logic                           apb_psel;
-    logic                           apb_penable;
+    logic                           apb_pwrite, apb_psel, apb_penable;
 
-    logic [`REGS_MAX_IDX-1:0]        register_adr;
+    logic [`REGS_MAX_IDX-1:0]       register_adr;
     
-    assign s_apb_addr = apb_paddr[`REGS_MAX_IDX+2:2];
+    assign register_adr = apb_paddr[`REGS_MAX_IDX+2:2];
 
+    // we are always ready to capture the data into our regs
+    assign PREADY  = 1'b1;
+    
     // write
     always_comb
     begin
         if (apb_psel && apb_penable && apb_pwrite)
         begin
+            regs_n = regs_q;
             unique case (register_adr)
                 `REG_IRQ_ENABLE:
                     regs_n[`REG_IRQ_ENABLE] = apb_pwdata;
@@ -73,7 +75,37 @@ module apb_event_unit
     end
 
     // read
+    always_comb
+    begin
+        if (apb_psel && apb_penable && !apb_pwrite)
+        begin
+            unique case (register_adr)
+                `REG_IRQ_ENABLE:
+                    PRDATA = regs_q[`REG_IRQ_ENABLE];
 
+                `REG_IRQ_PENDING:
+                    PRDATA = regs_q[`REG_IRQ_PENDING];
+
+                `REG_IRQ_ACK:
+                    PRDATA = regs_q[`REG_IRQ_ACK];
+
+                `REG_EVENT_ENABLE:
+                    PRDATA = regs_q[`REG_EVENT_ENABLE];
+
+                `REG_EVENT_PENDING:
+                    PRDATA = regs_q[`REG_EVENT_PENDING];
+
+                `REG_EVENT_ACK:
+                    PRDATA = regs_q[`REG_EVENT_ACK];
+
+                `REG_SLEEP_CTRL:
+                    PRDATA = regs_q[`REG_SLEEP_CTRL];
+
+                `REG_SLEEP_STATUS:
+                    PRDATA = regs_q[`REG_SLEEP_STATUS];
+            endcase
+        end
+    end
 
     // synchronouse part
     always_ff @(posedge HCLK, negedge HRESETn)
@@ -86,7 +118,7 @@ module apb_event_unit
             apb_psel    <= 'b0;
             apb_penable <= 'b0;
 
-            regs_q      <= 32'b0;
+            regs_q      <= 'b0;
         end
         else
             apb_paddr   <= PADDR;
