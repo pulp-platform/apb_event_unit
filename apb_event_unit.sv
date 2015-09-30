@@ -2,7 +2,7 @@
 
 module apb_event_unit 
 #(
-	parameter APB_ADDR_WIDTH = 12,  //APB slaves are 4KB by default
+	parameter APB_ADDR_WIDTH = 12  //APB slaves are 4KB by default
 )
 (
     input  logic                      HCLK,
@@ -21,3 +21,82 @@ module apb_event_unit
 	output logic					  fetch_enable_o,
 	output logic					  irq_o
 );
+
+    // registers
+
+    logic [31:0] [0:`REGS_MAX_IDX] regs_q, regs_n;
+    
+
+    // APB regis Interface
+    
+    logic [APB_ADDR_WIDTH-1:0]      apb_paddr;
+    logic [31:0]                    apb_pwdata;
+    logic                           apb_pwrite;
+    logic                           apb_psel;
+    logic                           apb_penable;
+
+    logic [`REGS_MAX_IDX-1:0]        register_adr;
+    
+    assign s_apb_addr = apb_paddr[`REGS_MAX_IDX+2:2];
+
+    // write
+    always_comb
+    begin
+        if (apb_psel && apb_penable && apb_pwrite)
+        begin
+            unique case (register_adr)
+                `REG_IRQ_ENABLE:
+                    regs_n[`REG_IRQ_ENABLE] = apb_pwdata;
+
+                `REG_IRQ_PENDING:
+                    regs_n[`REG_IRQ_PENDING] = apb_pwdata;
+
+                `REG_IRQ_ACK:
+                    regs_n[`REG_IRQ_ACK] = apb_pwdata;
+
+                `REG_EVENT_ENABLE:
+                    regs_n[`REG_EVENT_ENABLE] = apb_pwdata;
+
+                `REG_EVENT_PENDING:
+                    regs_n[`REG_EVENT_PENDING] = apb_pwdata;
+
+                `REG_EVENT_ACK:
+                    regs_n[`REG_EVENT_ACK] = apb_pwdata;
+
+                `REG_SLEEP_CTRL:
+                    regs_n[`REG_SLEEP_CTRL] = apb_pwdata;
+
+                `REG_SLEEP_STATUS:
+                    regs_n[`REG_SLEEP_STATUS] = apb_pwdata;
+            endcase
+        end
+    end
+
+    // read
+
+
+    // synchronouse part
+    always_ff @(posedge HCLK, negedge HRESETn)
+    begin
+        if(~HRESETn)
+        begin
+            apb_paddr   <= 'b0;
+            apb_pwdata  <= 32'b0;
+            apb_pwrite  <= 'b0;
+            apb_psel    <= 'b0;
+            apb_penable <= 'b0;
+
+            regs_q      <= 32'b0;
+        end
+        else
+            apb_paddr   <= PADDR;
+            apb_pwdata  <= PWDATA;
+            apb_pwrite  <= PWRITE;
+            apb_psel    <= PSEL;
+            apb_penable <= PENABLE;
+            
+            regs_q      <= regs_n;
+        end
+    
+
+endmodule

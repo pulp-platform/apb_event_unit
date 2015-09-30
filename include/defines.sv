@@ -9,6 +9,7 @@
 //             |___/                         //
 ///////////////////////////////////////////////
 
+`define REGS_MAX_IDX			'd8
 
 `define REG_IRQ_ENABLE         	3'b000 //BASEADDR+0x00
 `define REG_IRQ_PENDING      	3'b001 //BASEADDR+0x04
