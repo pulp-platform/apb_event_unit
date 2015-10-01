@@ -23,62 +23,75 @@ module apb_event_unit
 );
 
     // registers
-
     logic [0:`REGS_MAX_IDX] [31:0]  regs_q, regs_n;
     
+    // internal signals
+    logic [31:0] highest_pending_int, pending_int;
+    // there is currently an interrupt beeing served
+    logic interrupt_served_int;
 
     // APB register interface
-    
-    logic [APB_ADDR_WIDTH-1:0]      apb_paddr;
-    logic [31:0]                    apb_pwdata;
-    logic                           apb_pwrite, apb_psel, apb_penable;
-
     logic [`REGS_MAX_IDX-1:0]       register_adr;
     
-    assign register_adr = apb_paddr[`REGS_MAX_IDX+2:2];
+    assign register_adr = PADDR[`REGS_MAX_IDX+2:2];
+    // retrieve the highest pending interrupt
+    assign highest_pending_int = log2(regs_q[`REG_IRQ_PENDING]);
 
-    // we are always ready to capture the data into our regs
+    // APB logic: we are always ready to capture the data into our regs
     assign PREADY  = 1'b1;
-    
-    // write
+
+    // Cave: an empty regs_q[`REG_IRQ_ACK] means that software does not serve an interrupt at the moment
+
+    // interrupt signaling comb
     always_comb
     begin
-        if (apb_psel && apb_penable && apb_pwrite)
+        // as long as there are pending interrupts and core has acknowleged the last interrupt pull irq line high
+        // indicating that there are still interrupts to be served
+        if (regs_q[`REG_IRQ_ACK] == 'b0 & regs_q[`REG_IRQ_PENDING] != 'b0)
+            irq_o = 1'b1;
+        else
+            irq_o = 1'b0;
+        
+    end
+
+    // register write logic
+    always_comb
+    begin
+        regs_n = regs_q;
+        // update the pending register if new interrupts have arrived
+        regs_n[`REG_IRQ_PENDING] = ((regs_q[`REG_IRQ_ENABLE] & irq_i) | regs_q[`REG_IRQ_PENDING]);
+
+        // written from APB bus
+        if (PSEL && PENABLE && PWRITE)
         begin
-            regs_n = regs_q;
+
             unique case (register_adr)
                 `REG_IRQ_ENABLE:
-                    regs_n[`REG_IRQ_ENABLE] = apb_pwdata;
+                    regs_n[`REG_IRQ_ENABLE] = PWDATA;
 
+                // can be written e.g. for sw interrupts
                 `REG_IRQ_PENDING:
-                    regs_n[`REG_IRQ_PENDING] = apb_pwdata;
-
-                `REG_IRQ_ACK:
-                    regs_n[`REG_IRQ_ACK] = apb_pwdata;
-
-                `REG_EVENT_ENABLE:
-                    regs_n[`REG_EVENT_ENABLE] = apb_pwdata;
-
-                `REG_EVENT_PENDING:
-                    regs_n[`REG_EVENT_PENDING] = apb_pwdata;
-
-                `REG_EVENT_ACK:
-                    regs_n[`REG_EVENT_ACK] = apb_pwdata;
-
-                `REG_SLEEP_CTRL:
-                    regs_n[`REG_SLEEP_CTRL] = apb_pwdata;
-
-                `REG_SLEEP_STATUS:
-                    regs_n[`REG_SLEEP_STATUS] = apb_pwdata;
+                    regs_n[`REG_IRQ_PENDING] = PWDATA;
             endcase
+        end
+
+        // internal register is only set if no interrupt is served at the moment
+        if (~regs_q[`REG_IRQ_ACK])
+        begin
+            regs_n[`REG_IRQ_ACK] = highest_pending_int;
+            // clear the corresponding bit in the pending field ready to accept a new interrupt of the same priority
+            regs_n[`REG_IRQ_PENDING] = regs_n[`REG_IRQ_PENDING] ^ highest_pending_int;
         end
     end
 
-    // read
+    // register read logic
     always_comb
     begin
-        if (apb_psel && apb_penable && !apb_pwrite)
+        PRDATA = 'b0;
+
+        if (PSEL && PENABLE && !PWRITE)
         begin
+        
             unique case (register_adr)
                 `REG_IRQ_ENABLE:
                     PRDATA = regs_q[`REG_IRQ_ENABLE];
@@ -88,21 +101,6 @@ module apb_event_unit
 
                 `REG_IRQ_ACK:
                     PRDATA = regs_q[`REG_IRQ_ACK];
-
-                `REG_EVENT_ENABLE:
-                    PRDATA = regs_q[`REG_EVENT_ENABLE];
-
-                `REG_EVENT_PENDING:
-                    PRDATA = regs_q[`REG_EVENT_PENDING];
-
-                `REG_EVENT_ACK:
-                    PRDATA = regs_q[`REG_EVENT_ACK];
-
-                `REG_SLEEP_CTRL:
-                    PRDATA = regs_q[`REG_SLEEP_CTRL];
-
-                `REG_SLEEP_STATUS:
-                    PRDATA = regs_q[`REG_SLEEP_STATUS];
             endcase
         end
     end
@@ -112,21 +110,9 @@ module apb_event_unit
     begin
         if(~HRESETn)
         begin
-            apb_paddr   <= 'b0;
-            apb_pwdata  <= 32'b0;
-            apb_pwrite  <= 'b0;
-            apb_psel    <= 'b0;
-            apb_penable <= 'b0;
-
-            regs_q      <= 'b0;
+            regs_q      <= '{default: 32'b0};
         end
-        else
-            apb_paddr   <= PADDR;
-            apb_pwdata  <= PWDATA;
-            apb_pwrite  <= PWRITE;
-            apb_psel    <= PSEL;
-            apb_penable <= PENABLE;
-            
+        else            
             regs_q      <= regs_n;
         end
     
