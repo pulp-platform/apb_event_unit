@@ -1,4 +1,4 @@
-`include "defines.sv"
+`include "defines_event_unit.sv"
 
 module apb_event_unit 
 #(
@@ -26,7 +26,7 @@ module apb_event_unit
     logic [0:`REGS_MAX_IDX] [31:0]  regs_q, regs_n;
     
     // internal signals
-    logic [31:0] highest_pending_int, pending_int;
+    logic [31:0] highest_pending_int;
 
     // the ackowledge register is read
     logic reg_ack_read_int;
@@ -36,7 +36,7 @@ module apb_event_unit
     
     assign register_adr = PADDR[`REGS_MAX_IDX+2:2];
     // retrieve the highest pending interrupt
-    assign highest_pending_int = `log2(regs_q[`REG_IRQ_PENDING]);
+    assign highest_pending_int = `get_highest_bit(regs_q[`REG_IRQ_PENDING]);
 
     // APB logic: we are always ready to capture the data into our regs
     assign PREADY  = 1'b1;
@@ -48,33 +48,35 @@ module apb_event_unit
     begin
         // as long as there are pending interrupts and core has acknowleged the last interrupt pull irq line high
         // indicating that there are still interrupts to be served
-        if (regs_q[`REG_IRQ_ACK] == 'b0 && regs_q[`REG_IRQ_PENDING] != 'b0)
+        if (regs_q[`REG_IRQ_PENDING] != 'b0)
             irq_o = 1'b1;
         else
             irq_o = 1'b0;
         
     end
 
+    logic [31:00] pending_int, regs_irq_ack;
     // register write logic
     always_comb
     begin
         regs_n = regs_q;
-        
+        regs_irq_ack = regs_q[`REG_IRQ_ACK];
         //clear if acknowledge register is read
         if (reg_ack_read_int)
-            regs_n[`REG_IRQ_ACK] = 32'b0;
+            regs_irq_ack = 32'b0;
 
         // update the pending register if new interrupts have arrived
-        regs_n[`REG_IRQ_PENDING] = ((regs_q[`REG_IRQ_ENABLE] & irq_i) | regs_q[`REG_IRQ_PENDING]);
+        pending_int = ((regs_q[`REG_IRQ_ENABLE] & irq_i) | regs_q[`REG_IRQ_PENDING]);
 
         // internal register is only set if no interrupt is served at the moment
-        if (~regs_q[`REG_IRQ_ACK])
+        if (regs_q[`REG_IRQ_ACK] == 32'b0)
         begin
-            regs_n[`REG_IRQ_ACK] = highest_pending_int;
+            //$display("Setting Register");
+            regs_irq_ack = highest_pending_int;
             // clear the corresponding bit in the pending field ready to accept a new interrupt of the same priority
-            regs_n[`REG_IRQ_PENDING] = regs_q[`REG_IRQ_PENDING] ^ highest_pending_int;
+            pending_int = pending_int ^ highest_pending_int;
         end
-
+        
         // written from APB bus
         if (PSEL && PENABLE && PWRITE)
         begin
@@ -85,9 +87,13 @@ module apb_event_unit
 
                 // can be written e.g. for sw interrupts or clearing all pending interrupts
                 `REG_IRQ_PENDING:
-                    regs_n[`REG_IRQ_PENDING] = PWDATA;
+                    pending_int = PWDATA;
             endcase
         end
+
+        regs_n[`REG_IRQ_PENDING] = pending_int;
+        regs_n[`REG_IRQ_ACK] = regs_irq_ack;
+
     end
 
     // register read logic
@@ -106,7 +112,7 @@ module apb_event_unit
                 `REG_IRQ_PENDING:
                     PRDATA = regs_q[`REG_IRQ_PENDING];
 
-                `REG_IRQ_ACK: // TODO clean register when read
+                `REG_IRQ_ACK:
                 begin
                     PRDATA = regs_q[`REG_IRQ_ACK];
                     reg_ack_read_int = 1'b1;
