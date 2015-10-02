@@ -11,14 +11,19 @@
 //             |___/                         //
 ///////////////////////////////////////////////
 
-`define REGS_MAX_IDX			'd8
+// total number of address space reserved for the apb_event_unit
+`define ADR_MAX_IDX				'd4
 
-`define REG_IRQ_ENABLE         	3'b000 //BASEADDR+0x00
-`define REG_IRQ_PENDING      	3'b001 //BASEADDR+0x04
-`define REG_IRQ_ACK   			3'b010 //BASEADDR+0x08
+`define IRQ						2'b00
+`define EVENT					2'b01
+`define SLEEP					2'b10
 
-`define REG_EVENT_ENABLE 		3'b011 //BASEADDR+0x0C
-`define REG_EVENT_PENDING    	3'b100 //BASEADDR+0x10
-`define REG_EVENT_ACK      		3'b101 //BASEADDR+0x14
-`define REG_SLEEP_CTRL        	3'b110 //BASEADDR+0x18
-`define REG_SLEEP_STATUS		3'b111 //BASEADDR+0x1C
+// number of registers per (interrupt, event) service unit - 6 regs in total
+`define REGS_MAX_IDX			'd2
+
+`define REG_ENABLE 				2'b00
+`define REG_PENDING      		2'b01
+`define REG_ACK   				2'b10
+
+`define REG_SLEEP_CTRL        	2'b00
+`define REG_SLEEP_STATUS		2'b01
