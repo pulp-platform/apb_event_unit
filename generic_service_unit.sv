@@ -123,12 +123,10 @@ module generic_service_unit
     always_ff @(posedge HCLK, negedge HRESETn)
     begin
         if(~HRESETn)
-        begin
             regs_q      <= '{default: 32'b0};
-        end
         else            
             regs_q      <= regs_n;
-        end
+    end
     
 
 endmodule
