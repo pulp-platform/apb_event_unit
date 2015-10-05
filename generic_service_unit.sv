@@ -37,7 +37,9 @@ module generic_service_unit
     assign highest_pending_int = `get_highest_bit(regs_q[`REG_PENDING]);
 
     // APB logic: we are always ready to capture the data into our regs
-    assign PREADY  = 1'b1;
+    // not supporting transfare failure    assign PREADY  = 1'b1;
+    assign PREADY = 1'b1;
+    assign PSLVERR = 1'b0;
 
     // Cave: an empty regs_q[`REG_ACK] means that software does not serve an interrupt at the moment
 
@@ -69,10 +71,9 @@ module generic_service_unit
         // internal register is only set if no interrupt is served at the moment
         if (regs_q[`REG_ACK] == 32'b0)
         begin
-            //$display("Setting Register");
             regs_ack = highest_pending_int;
             // clear the corresponding bit in the pending field ready to accept a new interrupt of the same priority
-            pending_int = pending_int ^ highest_pending_int;
+            pending_int[highest_pending_int - 1] = 1'b0;
         end
         
         // written from APB bus
