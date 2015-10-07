@@ -16,10 +16,15 @@ module apb_event_unit
     output logic                      PREADY,
     output logic                      PSLVERR,
 	
+    // irq processing
 	input  logic			   [31:0] irq_i,
 	input  logic			   [31:0] event_i,
-	output logic					  fetch_enable_o,
-	output logic					  irq_o
+	output logic					  irq_o,
+    
+    // Sleep control
+    output logic                      fetch_enable_o,
+    output logic                      clk_gate_core_o, // output to core's clock gate to
+    input  logic                      core_busy_i
 );
 
 // one hot encoding
@@ -28,6 +33,9 @@ logic [2:0] psel_int;
 // output, internal wires 
 logic [31:0] prdata_interrupt, prdata_event, prdata_sleep;
 logic pready_interrupt, pready_event, pready_sleep, pslverr_interrupt, pslverr_event, pslverr_sleep;
+
+// event from event unit in order to wake up the core after an event has occured
+logic event_int, core_sleeping_int;
 
 // address selector - select right peripheral
 always_comb
@@ -61,12 +69,12 @@ begin
             PREADY = pready_event;
             PSLVERR = pslverr_interrupt;
         end        
-//       3'b100:
-//       begin
-//            PRDATA = prdata_interrupt;
-//            PREADY = pready_interrupt;
-//            PSLVERR = pslverr_interrupt;
-//        end
+       3'b100:
+       begin
+            PRDATA = prdata_interrupt;
+            PREADY = pready_interrupt;
+            PSLVERR = pslverr_interrupt;
+        end
         default:
         begin
             PRDATA = 'b0;
@@ -96,6 +104,7 @@ i_interrupt_unit
     .PSLVERR            (pslverr_interrupt),
     
     .signal_i           (irq_i), // generic signal could be an interrupt or an event
+    .core_sleeping_i    (core_sleeping_int),
     .irq_o              (irq_o)
 );
 
@@ -120,11 +129,34 @@ i_event_unit
     .PSLVERR            (pslverr_event),
     
     .signal_i           (event_i), // generic signal could be an interrupt or an event
-    .irq_o              ( ) // open - this is the main difference to the interrupt unit
+    .core_sleeping_i    (core_sleeping_int),
+    .irq_o              (event_int) // open - this is the main difference to the interrupt unit
 );
 
 
 // sleep unit
-
+sleep_unit
+#(
+    .APB_ADDR_WIDTH(APB_ADDR_WIDTH)  //APB slaves are 4KB by default
+)
+i_sleep_unit
+(
+    .HCLK               (HCLK),
+    .HRESETn            (HRESETn),
+    .PADDR              (PADDR),
+    .PWDATA             (PWDATA),
+    .PWRITE             (PWRITE),
+    .PSEL               (psel_int[2]),
+    .PENABLE            (PENABLE),
+    .PRDATA             (prdata_sleep),
+    .PREADY             (pready_sleep),
+    .PSLVERR            (pslverr_sleep),
+    
+    .signal_i           (event_int || irq_o), // interrupt or event signal - for sleep ctrl
+    .core_busy_i        (core_busy_i), // check if core is busy
+    .fetch_en_o         (fetch_enable_o),
+    .clk_gate_core_o    (clk_gate_core_o), // output to core's clock gate to
+    .core_sleeping_o    ( ) // open to interrupt unit to defer interrupt signal
+);
 
 endmodule

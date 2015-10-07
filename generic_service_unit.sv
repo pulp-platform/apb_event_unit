@@ -17,6 +17,7 @@ module generic_service_unit
     output logic                      PSLVERR,
 	
 	input  logic			   [31:0] signal_i, // generic signal could be an interrupt or an event
+    input  logic                      core_sleeping_i,
 	output logic					  irq_o
 );
 
@@ -61,7 +62,7 @@ module generic_service_unit
     begin
         // as long as there are pending interrupts and core has acknowleged the last interrupt pull irq line high
         // indicating that there are still interrupts to be served
-        if (regs_q[`REG_PENDING] != 'b0)
+        if (regs_q[`REG_PENDING] != 'b0 || (serving_isr_q & core_sleeping_i))
             irq_o = 1'b1;
         else
             irq_o = 1'b0;

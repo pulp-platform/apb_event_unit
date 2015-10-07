@@ -23,5 +23,10 @@
 `define REG_PENDING      		2'b01
 `define REG_ACK   				2'b10
 
-`define REG_SLEEP_CTRL        	2'b00
-`define REG_SLEEP_STATUS		2'b01
+`define REGS_SLEEP_MAX_IDX		'd1
+
+`define REG_SLEEP_CTRL        	2'b0
+`define REG_SLEEP_STATUS		2'b1
+
+`define SLEEP_ENABLE			1'b0
+`define SLEEP_STATUS 			1'b0
