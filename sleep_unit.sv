@@ -94,20 +94,33 @@ module sleep_unit
 		unique case(SLEEP_STATE_Q)
 
 			RUN:
-				fetch_en_o = 1'b1;
+			begin
+				// try to go to sleep immediately - necessary if wfi is called
+				// directly after setting the sleep register.
+				if (regs_q[`REG_SLEEP_CTRL][`SLEEP_ENABLE] && !signal_i)
+					fetch_en_o = 1'b0;
+				else
+					fetch_en_o = 1'b1;
+			end
 			SHUTDOWN:
 			begin
 				// stop fetching instructions and wait until the core has finished processing
 				fetch_en_o = 1'b0;
-//				core_sleeping_int = 1'b1;
+				//core_sleeping_int = 1'b1;
 			end
 			SLEEP:
 			begin
 				// switch off core clock
-				clk_gate_core_o = 1'b0;
+				clk_gate_core_o = (signal_i) ? 1'b1 : 1'b0;
 				core_sleeping_int = 1'b1;
 			end
 
+			default:
+			begin
+				fetch_en_o = 1'b1;
+				clk_gate_core_o = 1'b1;
+				core_sleeping_int = 1'b0;
+			end
 		endcase
 
 	end

@@ -49,6 +49,8 @@ begin
             psel_int[1] = PSEL;
         `SLEEP:
             psel_int[2] = PSEL;
+        default:
+            psel_int = 3'b0;
     endcase
 
 end
@@ -56,7 +58,7 @@ end
 // output mux
 always_comb
 begin
-    case(psel_int)
+    unique case(psel_int)
         3'b001:
         begin
             PRDATA = prdata_interrupt;
@@ -85,7 +87,6 @@ begin
 end
 
 // interrupt unit
-
 generic_service_unit 
 #(
     .APB_ADDR_WIDTH(APB_ADDR_WIDTH)  //APB slaves are 4KB by default
@@ -110,7 +111,6 @@ i_interrupt_unit
 
 
 // event unit
-
 generic_service_unit 
 #(
     .APB_ADDR_WIDTH(APB_ADDR_WIDTH)  //APB slaves are 4KB by default
@@ -156,7 +156,8 @@ i_sleep_unit
     .core_busy_i        (core_busy_i), // check if core is busy
     .fetch_en_o         (fetch_enable_o),
     .clk_gate_core_o    (clk_gate_core_o), // output to core's clock gate to
-    .core_sleeping_o    ( ) // open to interrupt unit to defer interrupt signal
+    .core_sleeping_o    (core_sleeping_int) // open to interrupt unit to defer interrupt 
+                                            //signal in order to give the core enough time after wakeup to catch the signal
 );
 
 endmodule

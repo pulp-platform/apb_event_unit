@@ -41,7 +41,7 @@ module generic_service_unit
     begin
         highest_pending_int = 'b0;
         
-        for (int i = 31; i >= 0; i--)
+        for (logic[4:0] i = 31; i > 0; i--)
         begin
             if (regs_q[`REG_PENDING][i])
             begin
@@ -134,6 +134,8 @@ module generic_service_unit
                     PRDATA = regs_q[`REG_ACK];
                     reg_ack_read_int = 1'b1;
                 end
+                default:
+                    PRDATA = 'b0;
             endcase
         end
     end
