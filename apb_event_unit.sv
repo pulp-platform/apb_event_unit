@@ -19,7 +19,7 @@ module apb_event_unit
     // irq processing
 	input  logic			   [31:0] irq_i,
 	input  logic			   [31:0] event_i,
-	output logic					  irq_o,
+	output logic			   [31:0] irq_o,
     
     // Sleep control
     output logic                      fetch_enable_o,
@@ -130,7 +130,7 @@ i_event_unit
     
     .signal_i           (event_i), // generic signal could be an interrupt or an event
     .core_sleeping_i    (core_sleeping_int),
-    .irq_o              (event_int) // open - this is the main difference to the interrupt unit
+    .irq_o              () // open - this is the main difference to the interrupt unit
 );
 
 
@@ -152,7 +152,7 @@ i_sleep_unit
     .PREADY             (pready_sleep),
     .PSLVERR            (pslverr_sleep),
     
-    .signal_i           (event_int || irq_o), // interrupt or event signal - for sleep ctrl
+    .signal_i           (irq_o[0]), // interrupt or event signal - for sleep ctrl
     .core_busy_i        (core_busy_i), // check if core is busy
     .fetch_en_o         (fetch_enable_o),
     .clk_gate_core_o    (clk_gate_core_o), // output to core's clock gate to

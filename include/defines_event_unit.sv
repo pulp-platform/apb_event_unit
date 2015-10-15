@@ -17,11 +17,12 @@
 `define SLEEP					2'b10
 
 // number of registers per (interrupt, event) service unit - 6 regs in total
-`define REGS_MAX_IDX			'd2
+`define REGS_MAX_IDX			'd3
 
 `define REG_ENABLE 				2'b00
 `define REG_PENDING      		2'b01
-`define REG_ACK   				2'b10
+`define REG_SET_PENDING			2'b10
+`define REG_CLEAR_PENDING		2'b11
 
 `define REGS_SLEEP_MAX_IDX		'd1
 
