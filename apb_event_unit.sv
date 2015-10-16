@@ -1,8 +1,8 @@
 `include "defines_event_unit.sv"
 
-module apb_event_unit 
+module apb_event_unit
 #(
-	parameter APB_ADDR_WIDTH = 12  //APB slaves are 4KB by default
+    parameter APB_ADDR_WIDTH = 12  //APB slaves are 4KB by default
 )
 (
     input  logic                      HCLK,
@@ -15,12 +15,12 @@ module apb_event_unit
     output logic               [31:0] PRDATA,
     output logic                      PREADY,
     output logic                      PSLVERR,
-	
+
     // irq processing
-	input  logic			   [31:0] irq_i,
-	input  logic			   [31:0] event_i,
-	output logic			   [31:0] irq_o,
-    
+    input  logic               [31:0] irq_i,
+    input  logic               [31:0] event_i,
+    output logic               [31:0] irq_o,
+
     // Sleep control
     output logic                      fetch_enable_o,
     output logic                      clk_gate_core_o, // output to core's clock gate to
@@ -30,7 +30,7 @@ module apb_event_unit
 // one hot encoding
 logic [2:0] psel_int;
 
-// output, internal wires 
+// output, internal wires
 logic [31:0] prdata_interrupt, prdata_event, prdata_sleep;
 logic pready_interrupt, pready_event, pready_sleep, pslverr_interrupt, pslverr_event, pslverr_sleep;
 
