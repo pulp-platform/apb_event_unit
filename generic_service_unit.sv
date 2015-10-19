@@ -61,6 +61,7 @@ module generic_service_unit
 
     logic [31:00] pending_int;
     // register write logic
+    int unsigned j;
     always_comb
     begin
         regs_n = regs_q;
@@ -77,10 +78,10 @@ module generic_service_unit
 
         // clear pending interrupts
         
-        for (i = 0; i < 32; i++)
+        for (j = 0; j < 32; j++)
         begin
-            if (regs_q[`REG_CLEAR_PENDING][i])
-                pending_int[i] = 1'b0;
+            if (regs_q[`REG_CLEAR_PENDING][j])
+                pending_int[j] = 1'b0;
         end
         
         
