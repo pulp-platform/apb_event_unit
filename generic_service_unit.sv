@@ -27,9 +27,9 @@ module generic_service_unit
     logic [4:0] highest_pending_int;
 
     // APB register interface
-    logic [`REGS_MAX_IDX-1:0]       register_adr;
+    logic [`REGS_MAX_ADR-1:0]       register_adr;
     
-    assign register_adr = PADDR[`REGS_MAX_IDX + 1:2];
+    assign register_adr = PADDR[`REGS_MAX_ADR + 1:2];
     // interrupt signaling comb
     // retrieve the highest pending interrupt
     // level-triggered one hot encoded

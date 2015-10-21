@@ -10,14 +10,15 @@
 ///////////////////////////////////////////////
 
 // total number of address space reserved for the apb_event_unit
-`define ADR_MAX_IDX				'd2 // number of bits needed to access all subunits
+`define ADR_MAX_ADR				'd2 // number of bits needed to access all subunits
 
 `define IRQ						2'b00
 `define EVENT					2'b01
 `define SLEEP					2'b10
 
 // number of registers per (interrupt, event) service unit - 8 regs in total
-`define REGS_MAX_IDX			'd2 // number of bits needed to access all registers
+`define REGS_MAX_IDX			'd3 // number of bits needed to access all registers
+`define REGS_MAX_ADR				'd2
 
 `define REG_ENABLE 				2'b00
 `define REG_PENDING      		2'b01
