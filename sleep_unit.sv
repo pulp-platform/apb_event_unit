@@ -19,8 +19,7 @@ module sleep_unit
 	input  logic			    	  signal_i, // interrupt or event signal
 	input  logic					  core_busy_i, // check if core is busy
 	output logic					  fetch_en_o,
-	output logic					  clk_gate_core_o, // output to core's clock gate - blocking the clock when low
-	output logic					  core_sleeping_o
+	output logic					  clk_gate_core_o // output to core's clock gate - blocking the clock when low
 );
 
 	enum 	logic[1:0]		{RUN, SHUTDOWN, SLEEP} SLEEP_STATE_N, SLEEP_STATE_Q;
@@ -38,9 +37,6 @@ module sleep_unit
 	//                    |_|     //
 	//  						  //
 	////////////////////////////////
-
-	//output sleeping status register directly
-	assign core_sleeping_o = regs_q[`REG_SLEEP_STATUS][`SLEEP_STATUS];
 
 	logic core_sleeping_int;
 
@@ -97,21 +93,21 @@ module sleep_unit
 			begin
 				// try to go to sleep immediately - necessary if wfi is called
 				// directly after setting the sleep register.
-				if (regs_q[`REG_SLEEP_CTRL][`SLEEP_ENABLE] && !signal_i)
-					fetch_en_o = 1'b0;
-				else
+				//if (regs_q[`REG_SLEEP_CTRL][`SLEEP_ENABLE] && !signal_i)
+				//	fetch_en_o = 1'b0;
+				//else
 					fetch_en_o = 1'b1;
 			end
 			SHUTDOWN:
 			begin
 				// stop fetching instructions and wait until the core has finished processing
 				fetch_en_o = 1'b0;
-				//core_sleeping_int = 1'b1;
 			end
 			SLEEP:
 			begin
 				// switch off core clock
-				clk_gate_core_o = (signal_i) ? 1'b1 : 1'b0;
+				//clk_gate_core_o = (signal_i) ? 1'b1 : 1'b0;
+				clk_gate_core_o = 1'b1;
 				core_sleeping_int = 1'b1;
 			end
 

@@ -17,7 +17,6 @@ module generic_service_unit
     output logic                      PSLVERR,
 	
 	input  logic			   [31:0] signal_i, // generic signal could be an interrupt or an event
-    input  logic                      core_sleeping_i,
 	output logic			   [31:0] irq_o
 );
 
@@ -30,17 +29,16 @@ module generic_service_unit
     // APB register interface
     logic [`REGS_MAX_IDX-1:0]       register_adr;
     
-    assign register_adr = PADDR[`REGS_MAX_IDX + 2:2];
+    assign register_adr = PADDR[`REGS_MAX_IDX + 1:2];
     // interrupt signaling comb
     // retrieve the highest pending interrupt
     // level-triggered one hot encoded
-    int unsigned i;
     always_comb
     begin
         highest_pending_int = 'b0;
         irq_o = 32'b0;
 
-        for (i = 0; i < 32; i++)
+        for (int i = 0; i < 32; i++)
         begin
             if (regs_q[`REG_PENDING][i])
             begin
@@ -61,7 +59,6 @@ module generic_service_unit
 
     logic [31:00] pending_int;
     // register write logic
-    int unsigned j;
     always_comb
     begin
         regs_n = regs_q;
@@ -78,10 +75,10 @@ module generic_service_unit
 
         // clear pending interrupts
         
-        for (j = 0; j < 32; j++)
+        for (int i = 0; i < 32; i++)
         begin
-            if (regs_q[`REG_CLEAR_PENDING][j])
-                pending_int[j] = 1'b0;
+            if (regs_q[`REG_CLEAR_PENDING][i])
+                pending_int[i] = 1'b0;
         end
         
         
