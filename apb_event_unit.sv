@@ -37,7 +37,7 @@ logic [2:0] [31:0] prdata;
 // event from event unit in order to wake up the core after an event has occured
 logic event_int, core_sleeping_int;
 
-assign slave_address_int = PADDR[`ADR_MAX_ADR + `REGS_MAX_ADR + 1:`REGS_MAX_IDX + 2];
+assign slave_address_int = PADDR[`ADR_MAX_ADR + `REGS_MAX_ADR + 1:`REGS_MAX_ADR + 2];
 
 // address selector - select right peripheral
 always_comb
@@ -59,7 +59,7 @@ begin
     else
     begin
         PRDATA = 'b0;
-        PREADY = 1'b0;
+        PREADY = 1'b1;
         PSLVERR = 1'b0;
     end
 end
