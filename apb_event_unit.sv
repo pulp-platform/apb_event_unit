@@ -22,6 +22,7 @@ module apb_event_unit
     output logic               [31:0] irq_o,
 
     // Sleep control
+    input  logic                      fetch_enable_i,
     output logic                      fetch_enable_o,
     output logic                      clk_gate_core_o, // output to core's clock gate to
     input  logic                      core_busy_i
@@ -33,6 +34,10 @@ logic [2:0] psel_int, pready, pslverr;
 logic [1:0] slave_address_int;
 // output, internal wires
 logic [2:0] [31:0] prdata;
+
+logic fetch_enable_ff1, fetch_enable_ff2, fetch_enable_int;
+
+assign fetch_enable_o =  fetch_enable_ff2 & fetch_enable_int;
 
 // event from event unit in order to wake up the core after an event has occured
 logic event_int, core_sleeping_int;
@@ -130,9 +135,25 @@ i_sleep_unit
     
     .signal_i           (|irq_o), // interrupt or event signal - for sleep ctrl
     .core_busy_i        (core_busy_i), // check if core is busy
-    .fetch_en_o         (fetch_enable_o),
+    .fetch_en_o         (fetch_enable_int),
     .clk_gate_core_o    (clk_gate_core_o) // output to core's clock gate to
                                             //signal in order to give the core enough time after wakeup to catch the signal
 );
+
+// fetch enable synchronizer part
+always_ff @(posedge HCLK, negedge HRESETn)
+begin
+    if(~HRESETn)
+    begin
+        fetch_enable_ff1   <= 1'b0;
+        fetch_enable_ff2   <= 1'b0;
+    end
+    else
+    begin            
+        fetch_enable_ff1  <= fetch_enable_i;
+        fetch_enable_ff2  <= fetch_enable_ff1;
+    end
+
+end 
 
 endmodule

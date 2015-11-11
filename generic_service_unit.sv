@@ -29,6 +29,9 @@ module generic_service_unit
     // APB register interface
     logic [`REGS_MAX_ADR-1:0]       register_adr;
     
+    // latched irq out
+    logic [31:0] irq_n;
+
     assign register_adr = PADDR[`REGS_MAX_ADR + 1:2];
     // interrupt signaling comb
     // retrieve the highest pending interrupt
@@ -36,7 +39,7 @@ module generic_service_unit
     always_comb
     begin
         highest_pending_int = 'b0;
-        irq_o = 32'b0;
+        irq_n = 32'b0;
 
         for (int i = 0; i < 32; i++)
         begin
@@ -48,7 +51,7 @@ module generic_service_unit
         end
         // as long as there are pending interrupts and core has acknowleged, cleared the last interrupt pull irq line high
         if (regs_q[`REG_PENDING] != 'b0)
-            irq_o[highest_pending_int] = 1'b1;
+            irq_n[highest_pending_int] = 1'b1;
 
     end
     // APB logic: we are always ready to capture the data into our regs
@@ -133,10 +136,12 @@ module generic_service_unit
         if(~HRESETn)
         begin
             regs_q          <= '{default: 32'b0};
+            irq_o           <= 32'b0;
         end
         else
         begin            
             regs_q          <= regs_n;
+            irq_o           <= irq_n;
         end
     end
     
