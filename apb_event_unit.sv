@@ -39,9 +39,6 @@ logic fetch_enable_ff1, fetch_enable_ff2, fetch_enable_int;
 
 assign fetch_enable_o =  fetch_enable_ff2 & fetch_enable_int;
 
-// event from event unit in order to wake up the core after an event has occured
-logic event_int, core_sleeping_int;
-
 assign slave_address_int = PADDR[`ADR_MAX_ADR + `REGS_MAX_ADR + 1:`REGS_MAX_ADR + 2];
 
 // address selector - select right peripheral
