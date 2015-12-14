@@ -1,8 +1,18 @@
+// Copyright 2015 ETH Zurich and University of Bologna.
+// Copyright and related rights are licensed under the Solderpad Hardware
+// License, Version 0.51 (the “License”); you may not use this file except in
+// compliance with the License.  You may obtain a copy of the License at
+// http://solderpad.org/licenses/SHL-0.51. Unless required by applicable law
+// or agreed to in writing, software, hardware and materials distributed under
+// this License is distributed on an “AS IS” BASIS, WITHOUT WARRANTIES OR
+// CONDITIONS OF ANY KIND, either express or implied. See the License for the
+// specific language governing permissions and limitations under the License.
+
 `include "defines_event_unit.sv"
 
-module generic_service_unit 
+module generic_service_unit
 #(
-	parameter APB_ADDR_WIDTH = 12  //APB slaves are 4KB by default
+    parameter APB_ADDR_WIDTH = 12  //APB slaves are 4KB by default
 )
 (
     input  logic                      HCLK,
@@ -15,20 +25,20 @@ module generic_service_unit
     output logic               [31:0] PRDATA,
     output logic                      PREADY,
     output logic                      PSLVERR,
-	
-	input  logic			   [31:0] signal_i, // generic signal could be an interrupt or an event
-	output logic			   [31:0] irq_o
+
+    input  logic               [31:0] signal_i, // generic signal could be an interrupt or an event
+    output logic               [31:0] irq_o
 );
 
     // registers
     logic [0:`REGS_MAX_IDX] [31:0]  regs_q, regs_n;
-    
+
     // internal signals
     logic [4:0] highest_pending_int;
 
     // APB register interface
     logic [`REGS_MAX_ADR-1:0]       register_adr;
-    
+
     // latched irq out
     logic [31:0] irq_n;
 
@@ -77,14 +87,14 @@ module generic_service_unit
         pending_int = pending_int | regs_q[`REG_SET_PENDING];
 
         // clear pending interrupts
-        
+
         for (int i = 0; i < 32; i++)
         begin
             if (regs_q[`REG_CLEAR_PENDING][i])
                 pending_int[i] = 1'b0;
         end
-        
-        
+
+
         // written from APB bus
         if (PSEL && PENABLE && PWRITE)
         begin
@@ -139,11 +149,11 @@ module generic_service_unit
             irq_o           <= 32'b0;
         end
         else
-        begin            
+        begin
             regs_q          <= regs_n;
             irq_o           <= irq_n;
         end
     end
-    
+
 
 endmodule
