@@ -15,7 +15,7 @@ module apb_event_unit
     parameter APB_ADDR_WIDTH = 12  //APB slaves are 4KB by default
 )
 (
-    input  logic                      clk_i, //clk bypass for synch ff	
+    input  logic                      clk_i, //clk bypass for synch ff
     input  logic                      HCLK,
     input  logic                      HRESETn,
     input  logic [APB_ADDR_WIDTH-1:0] PADDR,
@@ -38,6 +38,8 @@ module apb_event_unit
     output logic                      clk_gate_core_o, // output to core's clock gate to
     input  logic                      core_busy_i
 );
+
+logic [31:0] events;
 
 // one hot encoding
 logic [2:0] psel_int, pready, pslverr;
@@ -78,7 +80,7 @@ begin
 end
 
 // interrupt unit
-generic_service_unit 
+generic_service_unit
 #(
     .APB_ADDR_WIDTH(APB_ADDR_WIDTH)  //APB slaves are 4KB by default
 )
@@ -94,14 +96,14 @@ i_interrupt_unit
     .PRDATA             (prdata[0]),
     .PREADY             (pready[0]),
     .PSLVERR            (pslverr[0]),
-    
+
     .signal_i           (irq_i), // generic signal could be an interrupt or an event
     .irq_o              (irq_o)
 );
 
 
 // event unit
-generic_service_unit 
+generic_service_unit
 #(
     .APB_ADDR_WIDTH(APB_ADDR_WIDTH)  //APB slaves are 4KB by default
 )
@@ -117,9 +119,9 @@ i_event_unit
     .PRDATA             (prdata[1]),
     .PREADY             (pready[1]),
     .PSLVERR            (pslverr[1]),
-    
+
     .signal_i           (event_i), // generic signal could be an interrupt or an event
-    .irq_o              () // open - this is the main difference to the interrupt unit
+    .irq_o              (events )
 );
 
 
@@ -140,8 +142,9 @@ i_sleep_unit
     .PRDATA             (prdata[2]),
     .PREADY             (pready[2]),
     .PSLVERR            (pslverr[2]),
-    
-    .signal_i           (|irq_o), // interrupt or event signal - for sleep ctrl
+
+    .irq_i              (|irq_o), // interrupt signal - for sleep ctrl
+    .event_i            (|events), // event signal - for sleep ctrl
     .core_busy_i        (core_busy_i), // check if core is busy
     .fetch_en_o         (fetch_enable_int),
     .clk_gate_core_o    (clk_gate_core_o) // output to core's clock gate to
@@ -157,11 +160,11 @@ begin
         fetch_enable_ff2   <= 1'b0;
     end
     else
-    begin            
+    begin
         fetch_enable_ff1  <= fetch_enable_i;
         fetch_enable_ff2  <= fetch_enable_ff1;
     end
 
-end 
+end
 
 endmodule

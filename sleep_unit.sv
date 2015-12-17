@@ -26,7 +26,8 @@ module sleep_unit
     output logic                      PREADY,
     output logic                      PSLVERR,
 
-    input  logic                      signal_i, // interrupt or event signal
+    input  logic                      irq_i, // interrupt signal
+    input  logic                      event_i, // event signal
     input  logic                      core_busy_i, // check if core is busy
     output logic                      fetch_en_o,
     output logic                      clk_gate_core_o // output to core's clock gate - blocking the clock when low
@@ -61,7 +62,7 @@ module sleep_unit
             begin
                 // if sleep is enforced by writing one to the sleep control register
                 // and currently no interrupt/event is pending
-                if (regs_q[`REG_SLEEP_CTRL][`SLEEP_ENABLE] && !signal_i)
+                if (regs_q[`REG_SLEEP_CTRL][`SLEEP_ENABLE] && ((~irq_i) || (event_i)))
                     SLEEP_STATE_N = SHUTDOWN;
             end
 
@@ -69,10 +70,10 @@ module sleep_unit
             SHUTDOWN:
             begin
                 // if an interrupt occured while waiting - switch back to running
-                if (signal_i)
+                if (irq_i | event_i)
                     SLEEP_STATE_N = RUN;
                 // if no interrupt occured and the core has finished processing go to sleep
-                else if (~core_busy_i && ~signal_i)
+                else if (~core_busy_i)
                     SLEEP_STATE_N = SLEEP;
 
             end
@@ -80,7 +81,7 @@ module sleep_unit
             SLEEP:
             begin
                 // wake up when an interrupt is present
-                if (signal_i)
+                if (event_i | irq_i)
                     SLEEP_STATE_N = RUN;
             end
 
@@ -103,7 +104,7 @@ module sleep_unit
             begin
                 // try to go to sleep immediately - necessary if wfi is called
                 // directly after setting the sleep register.
-                if (regs_q[`REG_SLEEP_CTRL][`SLEEP_ENABLE] && !signal_i)
+                if (regs_q[`REG_SLEEP_CTRL][`SLEEP_ENABLE] && ((~event_i) || (~irq_i)))
                     fetch_en_o = 1'b0;
                 else
                     fetch_en_o = 1'b1;
@@ -116,8 +117,9 @@ module sleep_unit
             SLEEP:
             begin
                 // switch off core clock
-                clk_gate_core_o = (signal_i) ? 1'b1 : 1'b0;
+                clk_gate_core_o = (irq_i | event_i) ? 1'b1 : 1'b0;
                 core_sleeping_int = 1'b1;
+                fetch_en_o = 1'b0;
             end
 
             default:
@@ -158,7 +160,7 @@ module sleep_unit
         regs_n[`REG_SLEEP_STATUS][`SLEEP_STATUS] = core_sleeping_int;
 
         // clear ctrl bit if core is asleep
-        if (core_sleeping_int)
+        if (event_i)
             regs_n[`REG_SLEEP_CTRL][`SLEEP_ENABLE] =  1'b0;
 
         // written from APB bus
