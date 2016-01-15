@@ -143,8 +143,7 @@ i_sleep_unit
     .PREADY             (pready[2]),
     .PSLVERR            (pslverr[2]),
 
-    .irq_i              (|irq_o), // interrupt signal - for sleep ctrl
-    .event_i            (|events), // event signal - for sleep ctrl
+    .signal_i           (|(irq_o || events)), // interrupt/event signal - for sleep ctrl
     .core_busy_i        (core_busy_i), // check if core is busy
     .fetch_en_o         (fetch_enable_int),
     .clk_gate_core_o    (clk_gate_core_o) // output to core's clock gate to
