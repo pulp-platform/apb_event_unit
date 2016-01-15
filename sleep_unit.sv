@@ -72,7 +72,7 @@ module sleep_unit
                 if (signal_i)
                     SLEEP_STATE_N = RUN;
                 // if no interrupt occured and the core has finished processing go to sleep
-                else if (~core_busy_i && ~signal_i)
+                else if (~core_busy_i)
                     SLEEP_STATE_N = SLEEP;
 
             end
