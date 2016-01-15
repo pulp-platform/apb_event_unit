@@ -160,7 +160,7 @@ module sleep_unit
         regs_n[`REG_SLEEP_STATUS][`SLEEP_STATUS] = core_sleeping_int;
 
         // clear ctrl bit if core is asleep
-        if (event_i)
+        if (core_sleeping_int)
             regs_n[`REG_SLEEP_CTRL][`SLEEP_ENABLE] =  1'b0;
 
         // written from APB bus
