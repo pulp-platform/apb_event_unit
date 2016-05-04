@@ -118,6 +118,7 @@ module sleep_unit
                 // switch off core clock
                 clk_gate_core_o = (signal_i) ? 1'b1 : 1'b0;
                 core_sleeping_int = 1'b1;
+                fetch_en_o = 1'b0;
             end
 
             default:
